@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FotoFix</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f0f14">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
   :root { --bg: #0f0f14; --text: #f2efe8; --muted: #a8a3b3; --gold: #e2c27c; --line: #2f2f3c; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
@@ -44,6 +48,17 @@ async function current() {
   }
   return null;
 }
+// Tarayıcı erişimi: /web bağlantısıyla gelen kişisel anahtarı bu tarayıcıda hatırla
+const KEY = "fotofix_anahtar";
+const hash = new URLSearchParams(location.hash.slice(1));
+const fromTelegram = hash.has("tgWebAppData");
+let key = hash.get("anahtar");
+try {
+  if (key) localStorage.setItem(KEY, key);
+  else if (!fromTelegram) key = localStorage.getItem(KEY);
+} catch (e) {}
+if (hash.has("unut")) { try { localStorage.removeItem(KEY); } catch (e) {} key = null; }
+
 (async () => {
   const d = await current();
   if (!d) {
@@ -53,7 +68,9 @@ async function current() {
       "Biraz sonra tekrar dene ya da <a href='https://t.me/Fotobotu_bot'>@Fotobotu_bot</a>'a doğrudan fotoğraf gönder.";
     return;
   }
-  location.replace(d.url.replace(/\/$/, "") + "/" + location.search + location.hash);
+  const base = d.url.replace(/\/$/, "") + "/";
+  // Telegram'dan geldiyse oturum bilgisini aynen taşı; tarayıcıdan geldiyse kişisel anahtarı ekle
+  location.replace(base + location.search + (fromTelegram ? location.hash : (key ? "#anahtar=" + encodeURIComponent(key) : "")));
 })();
 </script>
 </body>
