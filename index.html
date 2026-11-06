@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FotoFix</title>
+<style>
+  :root { --bg: #0f0f14; --text: #f2efe8; --muted: #a8a3b3; --gold: #e2c27c; --line: #2f2f3c; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; padding: 24px 16px; text-align: center; box-sizing: border-box; }
+  h1 { margin: 0; font-size: 22px; } h1 span { color: var(--gold); }
+  .spin { width: 32px; height: 32px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--gold);
+    animation: s 1s linear infinite; }
+  @keyframes s { to { transform: rotate(360deg); } }
+  p { margin: 0; color: var(--muted); max-width: 340px; }
+  a { color: var(--gold); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Foto<span>Fix</span></h1>
+  <div class="spin" id="spin"></div>
+  <p id="msg">Bağlanılıyor…</p>
+</main>
+<script>
+// Bu sayfanın adresi hiç değişmez. Bot her açılışta güncel sunucu adresini adres.json'a yazar;
+// sayfa oraya yönlendirir ve Telegram'ın verdiği oturum bilgisini (# sonrası) olduğu gibi taşır.
+const repo = "hhhhalill/fotofix";
+const sources = [
+  "https://api.github.com/repos/" + repo + "/contents/adres.json?ref=main",
+  "https://raw.githubusercontent.com/" + repo + "/main/adres.json?t=" + Date.now(),
+];
+async function current() {
+  for (const src of sources) {
+    try {
+      const r = await fetch(src, { cache: "no-store" });
+      if (!r.ok) continue;
+      const j = await r.json();
+      const data = j.content ? JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\n/g, ""))))) : j;
+      if (data && /^https:\/\/[a-z0-9-]+\.trycloudflare\.com\/?$/.test(data.url)) return data;
+    } catch (e) {}
+  }
+  return null;
+}
+(async () => {
+  const d = await current();
+  if (!d) {
+    document.getElementById("spin").style.display = "none";
+    document.getElementById("msg").innerHTML =
+      "Sunucu adresi alınamadı. Bilgisayar ve yedek telefon kapalı olabilir.<br><br>" +
+      "Biraz sonra tekrar dene ya da <a href='https://t.me/Fotobotu_bot'>@Fotobotu_bot</a>'a doğrudan fotoğraf gönder.";
+    return;
+  }
+  location.replace(d.url.replace(/\/$/, "") + "/" + location.search + location.hash);
+})();
+</script>
+</body>
+</html>
