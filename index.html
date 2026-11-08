@@ -49,16 +49,18 @@ async function read(src, ms) {
   }
 }
 // İki kaynağa aynı anda bak: API en güncelini verir ama yavaşlayabilir; raw hızlıdır ama birkaç dakika eski olabilir.
-// API 3 sn içinde yanıt verirse onu, vermezse ikisinden gelenin en yenisini kullan.
+// API 1 sn içinde yanıt verirse onu, vermezse hangisi önce gelirse onu kullan (takılan kaynağı bekleme).
+function firstOf(ps) {
+  return new Promise(res => {
+    let left = ps.length;
+    ps.forEach(p => p.then(v => { if (v) res(v); else if (--left === 0) res(null); }));
+  });
+}
 async function current() {
-  const now = Date.now();
-  const api = read("https://api.github.com/repos/" + repo + "/contents/adres.json?ref=main", 8000);
-  const raw = read("https://raw.githubusercontent.com/" + repo + "/main/adres.json?t=" + now, 8000);
-  const quick = await Promise.race([api, new Promise(r => setTimeout(() => r(null), 3000))]);
-  if (quick) return quick;
-  const found = (await Promise.all([api, raw])).filter(Boolean);
-  found.sort((a, b) => (b.zaman || 0) - (a.zaman || 0));
-  return found[0] || null;
+  const api = read("https://api.github.com/repos/" + repo + "/contents/adres.json?ref=main", 6000);
+  const raw = read("https://raw.githubusercontent.com/" + repo + "/main/adres.json?t=" + Date.now(), 6000);
+  const quick = await Promise.race([api, new Promise(r => setTimeout(() => r(null), 1000))]);
+  return quick || firstOf([api, raw]);
 }
 // Tarayıcı erişimi: /web bağlantısıyla gelen kişisel anahtarı bu tarayıcıda hatırla
 const KEY = "fotofix_anahtar";
