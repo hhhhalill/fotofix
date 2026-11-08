@@ -78,7 +78,9 @@ async function current() {
 const KEY = "fotofix_anahtar";
 const hash = new URLSearchParams(location.hash.slice(1));
 const fromTelegram = hash.has("tgWebAppData");
-let key = hash.get("anahtar");
+const query = new URLSearchParams(location.search);
+let key = hash.get("anahtar") || query.get("anahtar");   // ?anahtar= : Instagram'dan "Tarayıcıda aç" ile gelen
+query.delete("anahtar");
 try {
   if (key) localStorage.setItem(KEY, key);
   else if (!fromTelegram) key = localStorage.getItem(KEY);
@@ -104,7 +106,8 @@ if (hash.has("unut")) { try { localStorage.removeItem(KEY); } catch (e) {} key =
   }
   const base = d.url.replace(/\/$/, "") + "/";
   // Telegram'dan geldiyse oturum bilgisini aynen taşı; tarayıcıdan geldiyse kişisel anahtarı ekle
-  location.replace(base + location.search + (fromTelegram ? location.hash : (key ? "#anahtar=" + encodeURIComponent(key) : "")));
+  const qs = query.toString();
+  location.replace(base + (qs ? "?" + qs : "") + (fromTelegram ? location.hash : (key ? "#anahtar=" + encodeURIComponent(key) : "")));
 })();
 </script>
 </body>
