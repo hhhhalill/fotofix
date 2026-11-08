@@ -32,21 +32,33 @@
 // Bu sayfanın adresi hiç değişmez. Bot her açılışta güncel sunucu adresini adres.json'a yazar;
 // sayfa oraya yönlendirir ve Telegram'ın verdiği oturum bilgisini (# sonrası) olduğu gibi taşır.
 const repo = "hhhhalill/fotofix";
-const sources = [
-  "https://api.github.com/repos/" + repo + "/contents/adres.json?ref=main",
-  "https://raw.githubusercontent.com/" + repo + "/main/adres.json?t=" + Date.now(),
-];
-async function current() {
-  for (const src of sources) {
-    try {
-      const r = await fetch(src, { cache: "no-store" });
-      if (!r.ok) continue;
-      const j = await r.json();
-      const data = j.content ? JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\n/g, ""))))) : j;
-      if (data && /^https:\/\/[a-z0-9-]+\.trycloudflare\.com\/?$/.test(data.url)) return data;
-    } catch (e) {}
+// Tek bir kaynağı oku; GitHub bazen yanıt vermeden bekletiyor, o yüzden süre sınırı var.
+async function read(src, ms) {
+  const c = new AbortController();
+  const t = setTimeout(() => c.abort(), ms);
+  try {
+    const r = await fetch(src, { cache: "no-store", signal: c.signal });
+    if (!r.ok) return null;
+    const j = await r.json();
+    const data = j.content ? JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\n/g, ""))))) : j;
+    return data && /^https:\/\/[a-z0-9-]+\.trycloudflare\.com\/?$/.test(data.url) ? data : null;
+  } catch (e) {
+    return null;
+  } finally {
+    clearTimeout(t);
   }
-  return null;
+}
+// İki kaynağa aynı anda bak: API en güncelini verir ama yavaşlayabilir; raw hızlıdır ama birkaç dakika eski olabilir.
+// API 3 sn içinde yanıt verirse onu, vermezse ikisinden gelenin en yenisini kullan.
+async function current() {
+  const now = Date.now();
+  const api = read("https://api.github.com/repos/" + repo + "/contents/adres.json?ref=main", 8000);
+  const raw = read("https://raw.githubusercontent.com/" + repo + "/main/adres.json?t=" + now, 8000);
+  const quick = await Promise.race([api, new Promise(r => setTimeout(() => r(null), 3000))]);
+  if (quick) return quick;
+  const found = (await Promise.all([api, raw])).filter(Boolean);
+  found.sort((a, b) => (b.zaman || 0) - (a.zaman || 0));
+  return found[0] || null;
 }
 // Tarayıcı erişimi: /web bağlantısıyla gelen kişisel anahtarı bu tarayıcıda hatırla
 const KEY = "fotofix_anahtar";
@@ -60,12 +72,20 @@ try {
 if (hash.has("unut")) { try { localStorage.removeItem(KEY); } catch (e) {} key = null; }
 
 (async () => {
-  const d = await current();
+  let d = null;
+  for (let i = 0; i < 4 && !d; i++) {
+    if (i) {
+      document.getElementById("msg").textContent = "Bağlanılıyor… (tekrar deneniyor " + (i + 1) + "/4)";
+      await new Promise(r => setTimeout(r, 4000));
+    }
+    d = await current();
+  }
   if (!d) {
     document.getElementById("spin").style.display = "none";
     document.getElementById("msg").innerHTML =
-      "Sunucu adresi alınamadı. Bilgisayar ve yedek telefon kapalı olabilir.<br><br>" +
-      "Biraz sonra tekrar dene ya da <a href='https://t.me/Fotobotu_bot'>@Fotobotu_bot</a>'a doğrudan fotoğraf gönder.";
+      "Sunucu adresi alınamadı. İnternet bağlantını kontrol et ya da biraz sonra tekrar dene.<br><br>" +
+      "<a href='#' onclick='location.reload();return false'>Tekrar dene</a> · " +
+      "<a href='https://t.me/Fotobotu_bot'>@Fotobotu_bot</a>'a doğrudan fotoğraf gönder.";
     return;
   }
   const base = d.url.replace(/\/$/, "") + "/";
