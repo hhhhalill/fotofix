@@ -81,11 +81,20 @@ const fromTelegram = hash.has("tgWebAppData");
 const query = new URLSearchParams(location.search);
 let key = hash.get("anahtar") || query.get("anahtar");   // ?anahtar= : Instagram'dan "Tarayıcıda aç" ile gelen
 query.delete("anahtar");
+// Anahtar iki yerde tutulur: iPhone'daki bir tarayıcıda localStorage kalıcı olmadığı görüldü (ls/ck sayaçları teşhis içindir)
+const cookieGet = n => { const m = document.cookie.match(new RegExp("(?:^|; )" + n + "=([^;]*)")); return m ? decodeURIComponent(m[1]) : null; };
+const cookieSet = (n, v, age = 34560000) => { document.cookie = n + "=" + encodeURIComponent(v) + "; Max-Age=" + age + "; Path=/; Secure; SameSite=Lax"; };
+let lsN = 0, ckN = 0;
+try { lsN = (parseInt(localStorage.getItem("fotofix_n") || "0", 10) || 0) + 1; localStorage.setItem("fotofix_n", String(lsN)); } catch (e) {}
+try { ckN = (parseInt(cookieGet("fotofix_n") || "0", 10) || 0) + 1; cookieSet("fotofix_n", String(ckN)); } catch (e) {}
 try {
-  if (key) localStorage.setItem(KEY, key);
-  else if (!fromTelegram) key = localStorage.getItem(KEY);
+  if (key) { localStorage.setItem(KEY, key); cookieSet(KEY, key); }
+  else if (!fromTelegram) {
+    key = localStorage.getItem(KEY) || cookieGet(KEY);
+    if (key) { localStorage.setItem(KEY, key); cookieSet(KEY, key); }   // biri silinmişse diğerinden tamamla
+  }
 } catch (e) {}
-if (hash.has("unut")) { try { localStorage.removeItem(KEY); } catch (e) {} key = null; }
+if (hash.has("unut")) { try { localStorage.removeItem(KEY); cookieSet(KEY, "", 0); } catch (e) {} key = null; }
 
 (async () => {
   let d = null;
@@ -111,7 +120,7 @@ if (hash.has("unut")) { try { localStorage.removeItem(KEY); } catch (e) {} key =
   // depo: bu tarayıcıda kalıcı hafıza çalışıyor mu (tekrar isim sorma sorununu teşhis için)
   let depo = 0;
   try { localStorage.setItem("fotofix_t", "1"); depo = localStorage.getItem("fotofix_t") === "1" ? 1 : 0; localStorage.removeItem("fotofix_t"); } catch (e) {}
-  location.replace(base + (qs ? "?" + qs : "") + (fromTelegram ? location.hash : (key ? "#anahtar=" + encodeURIComponent(key) : "#yok=1&depo=" + depo)));
+  location.replace(base + (qs ? "?" + qs : "") + (fromTelegram ? location.hash : (key ? "#anahtar=" + encodeURIComponent(key) : "#yok=1&depo=" + depo + "&ls=" + lsN + "&ck=" + ckN)));
 })();
 </script>
 </body>
