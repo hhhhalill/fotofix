@@ -107,7 +107,8 @@ if (hash.has("unut")) { try { localStorage.removeItem(KEY); } catch (e) {} key =
   const base = d.url.replace(/\/$/, "") + "/";
   // Telegram'dan geldiyse oturum bilgisini aynen taşı; tarayıcıdan geldiyse kişisel anahtarı ekle
   const qs = query.toString();
-  location.replace(base + (qs ? "?" + qs : "") + (fromTelegram ? location.hash : (key ? "#anahtar=" + encodeURIComponent(key) : "")));
+  // Anahtar yalnızca bu sayfada saklanır: "bu tarayıcıda kayıt yok" kararını (#yok=1) sadece burası verir
+  location.replace(base + (qs ? "?" + qs : "") + (fromTelegram ? location.hash : (key ? "#anahtar=" + encodeURIComponent(key) : "#yok=1")));
 })();
 </script>
 </body>
