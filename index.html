@@ -74,6 +74,18 @@ async function current() {
   const quick = await Promise.race([api, new Promise(r => setTimeout(() => r(null), 1000))]);
   return quick || firstOf([api, raw]);
 }
+async function alive(url) {
+  const c = new AbortController();
+  const t = setTimeout(() => c.abort(), 6000);
+  try {
+    const r = await fetch(url.replace(/\/$/, "") + "/api/saglik", { cache: "no-store", signal: c.signal });
+    return r.ok;
+  } catch (e) {
+    return false;
+  } finally {
+    clearTimeout(t);
+  }
+}
 // Tarayıcı erişimi: /web bağlantısıyla gelen kişisel anahtarı bu tarayıcıda hatırla
 const KEY = "fotofix_anahtar";
 const hash = new URLSearchParams(location.hash.slice(1));
@@ -98,17 +110,19 @@ if (hash.has("unut")) { try { localStorage.removeItem(KEY); cookieSet(KEY, "", 0
 
 (async () => {
   let d = null;
-  for (let i = 0; i < 4 && !d; i++) {
+  for (let i = 0; i < 8 && !d; i++) {
     if (i) {
-      document.getElementById("msg").textContent = "Bağlanılıyor… (tekrar deneniyor " + (i + 1) + "/4)";
-      await new Promise(r => setTimeout(r, 4000));
+      document.getElementById("msg").textContent = "Sunucu hazırlanıyor, bekleniyor… (" + (i + 1) + "/8)";
+      await new Promise(r => setTimeout(r, 6000));
     }
-    d = await current();
+    const c = await current();
+    // Ölü adrese gönderme: oradan Cloudflare hata sayfası çıkar ve kullanıcı geri dönemez
+    if (c && await alive(c.url)) d = c;
   }
   if (!d) {
     document.getElementById("spin").style.display = "none";
     document.getElementById("msg").innerHTML =
-      "Sunucu adresi alınamadı. İnternet bağlantını kontrol et ya da biraz sonra tekrar dene.<br><br>" +
+      "Sunucuya şu an ulaşılamıyor. İnternet bağlantını kontrol et ya da biraz sonra tekrar dene.<br><br>" +
       "<a href='#' onclick='location.reload();return false'>Tekrar dene</a> · " +
       "<a href='https://t.me/Fotobotu_bot'>@Fotobotu_bot</a>'a doğrudan fotoğraf gönder.";
     return;
