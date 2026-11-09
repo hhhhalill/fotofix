@@ -108,7 +108,10 @@ if (hash.has("unut")) { try { localStorage.removeItem(KEY); } catch (e) {} key =
   // Telegram'dan geldiyse oturum bilgisini aynen taşı; tarayıcıdan geldiyse kişisel anahtarı ekle
   const qs = query.toString();
   // Anahtar yalnızca bu sayfada saklanır: "bu tarayıcıda kayıt yok" kararını (#yok=1) sadece burası verir
-  location.replace(base + (qs ? "?" + qs : "") + (fromTelegram ? location.hash : (key ? "#anahtar=" + encodeURIComponent(key) : "#yok=1")));
+  // depo: bu tarayıcıda kalıcı hafıza çalışıyor mu (tekrar isim sorma sorununu teşhis için)
+  let depo = 0;
+  try { localStorage.setItem("fotofix_t", "1"); depo = localStorage.getItem("fotofix_t") === "1" ? 1 : 0; localStorage.removeItem("fotofix_t"); } catch (e) {}
+  location.replace(base + (qs ? "?" + qs : "") + (fromTelegram ? location.hash : (key ? "#anahtar=" + encodeURIComponent(key) : "#yok=1&depo=" + depo)));
 })();
 </script>
 </body>
