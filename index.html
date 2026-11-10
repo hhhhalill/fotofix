@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FotoFix</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#0f0f14">
+<meta name="theme-color" content="#e6f7f6">
 <meta name="description" content="Fotoğrafını tek dokunuşla netleştir ve güzelleştir.">
 <!-- Instagram, WhatsApp, Telegram vb. bağlantı önizlemesi -->
 <meta property="og:type" content="website">
@@ -21,13 +21,13 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
-  :root { --bg: #0e0e12; --text: #f5f3f7; --muted: #a29fab; --gold: #ff4f8b; --line: #2c2c36; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+  :root { --bg: #f3f7fb; --text: #1d2635; --muted: #6a7587; --gold: #2d7ff0; --red: #ff5a5f; --line: #dfe6ef; }
+  html, body { margin: 0; height: 100%; background: linear-gradient(180deg, #e6f7f6, var(--bg) 60%); color: var(--text);
     font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   main { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 14px; padding: 24px 16px; text-align: center; box-sizing: border-box; }
-  h1 { margin: 0; font-size: 22px; } h1 span { color: var(--gold); }
-  .spin { width: 32px; height: 32px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--gold);
+  h1 { margin: 0; font-size: 22px; } h1 span { color: var(--red); }
+  .spin { width: 32px; height: 32px; border-radius: 50%; border: 3px solid var(--line); border-top-color: #12bfb1;
     animation: s 1s linear infinite; }
   @keyframes s { to { transform: rotate(360deg); } }
   p { margin: 0; color: var(--muted); max-width: 340px; }
